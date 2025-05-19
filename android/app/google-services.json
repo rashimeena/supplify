@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "279557486810",
+    "project_id": "supplify-93798",
+    "storage_bucket": "supplify-93798.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:279557486810:android:ccad11a860487164090de3",
+        "android_client_info": {
+          "package_name": "com.example.supplify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBw7-tWcOGgVXnaGCF7i_0Hwew6bwtEXsE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
