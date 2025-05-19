@@ -19,6 +19,7 @@ class SupplifyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+       debugShowCheckedModeBanner: false,
       home: Wrapper(),
     );
   }
