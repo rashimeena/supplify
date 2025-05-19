@@ -1,8 +1,8 @@
-
-
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:supplify/forgot.dart';
+import 'package:supplify/signup.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -42,7 +42,12 @@ class _LoginState extends State<Login> {
               decoration: InputDecoration(hintText: 'enter password'),
                
          ),
-         ElevatedButton(onPressed: (()=>signIn()), child: Text("Login"))
+         ElevatedButton(onPressed: (()=>signIn()), child: Text("Login")),
+         SizedBox(height: 30,),
+          // Make sure to import or define the Signup widget above this usage.
+          ElevatedButton(onPressed: (()=>Get.to(Signup())), child: Text("Register Now")),
+          SizedBox(height: 30,),
+           ElevatedButton(onPressed: (()=>Get.to(Forgot())), child: Text("Fogot Password?"))
          ],
          ),
        )
@@ -50,6 +55,18 @@ class _LoginState extends State<Login> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -82,4 +99,5 @@ class _LoginState extends State<Login> {
       
 //     );
 //   }
+// } }
 // }
