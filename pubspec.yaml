@@ -40,6 +40,7 @@ dependencies:
   cloud_firestore: ^5.6.7
   firebase_auth: ^5.5.3
   get: ^4.7.2
+  fl_chart: ^0.66.2
 
 dev_dependencies:
   flutter_test:

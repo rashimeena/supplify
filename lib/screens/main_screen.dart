@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supplify/screens/homescreen.dart'; // Make sure path is correct
+import 'package:supplify/screens/homescreen.dart';
+import 'package:supplify/screens/analytics_screen.dart';
+
+ // Make sure path is correct
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,6 +16,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     Homescreen(),
+    AnalyticsScreen(),
     PlaceholderScreen(title: 'Graph'),
     PlaceholderScreen(title: 'Stock Status'),
     PlaceholderScreen(title: 'Settings'),
@@ -33,9 +37,12 @@ class _MainScreenState extends State<MainScreen> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics),label: 'Analytics',),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Graph'),
           BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'Stock'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+ 
+
         ],
       ),
     );
@@ -55,3 +62,8 @@ class PlaceholderScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
