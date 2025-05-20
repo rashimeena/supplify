@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supplify/screens/category_distribution_screen.dart';
 import 'package:supplify/screens/homescreen.dart';
 import 'package:supplify/screens/analytics_screen.dart';
+import 'package:supplify/screens/settings_screen.dart';
+import 'package:supplify/screens/stock_logs_screen.dart';
 
  // Make sure path is correct
 
@@ -17,9 +20,11 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     Homescreen(),
     AnalyticsScreen(),
-    PlaceholderScreen(title: 'Graph'),
-    PlaceholderScreen(title: 'Stock Status'),
-    PlaceholderScreen(title: 'Settings'),
+    CategoryDistributionScreen(),
+    // PlaceholderScreen(title: 'Graph'),
+    StockLogsScreen(),
+    // PlaceholderScreen(title: 'Stock Status'),
+     SettingsScreen(),
   ];
 
   @override
@@ -38,9 +43,12 @@ class _MainScreenState extends State<MainScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.analytics),label: 'Analytics',),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Graph'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'Stock'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+           BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Category'),
+          // BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Graph'),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt),label: 'Logs',),
+          // BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'Stock'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings),label: 'Settings',),
+
  
 
         ],
