@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -10,57 +11,95 @@ class Homescreen extends StatefulWidget {
 }
 
 class InventoryItem {
+  String id; // Add document ID field
   String name;
   String category;
   int quantity;
   DateTime lastUpdated;
 
   InventoryItem({
+    required this.id,
     required this.name,
     required this.category,
     required this.quantity,
     required this.lastUpdated,
   });
+
+  // Convert to a Map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'category': category,
+      'quantity': quantity,
+      'lastUpdated': Timestamp.fromDate(lastUpdated),
+    };
+  }
+
+  // Create an InventoryItem from a Firestore document
+  factory InventoryItem.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return InventoryItem(
+      id: doc.id,
+      name: data['name'] ?? '',
+      category: data['category'] ?? '',
+      quantity: data['quantity'] ?? 0,
+      lastUpdated: (data['lastUpdated'] as Timestamp).toDate(),
+    );
+  }
 }
 
 class _HomescreenState extends State<Homescreen> {
   final user = FirebaseAuth.instance.currentUser;
+  // Reference to the Firestore collection
+  final CollectionReference _inventoryCollection = 
+      FirebaseFirestore.instance.collection('inventory');
 
   final _nameController = TextEditingController();
   final _categoryController = TextEditingController();
   final _quantityController = TextEditingController();
   final _searchController = TextEditingController();
 
-  List<InventoryItem> _allItems = [
-    InventoryItem(
-        name: 'Printer Paper',
-        category: 'Office Supplies',
-        quantity: 500,
-        lastUpdated: DateTime.now()),
-    InventoryItem(
-        name: 'Visitor ID Cards',
-        category: 'IDs',
-        quantity: 50,
-        lastUpdated: DateTime(2025, 5, 12)),
-    InventoryItem(
-        name: 'Conference Banner',
-        category: 'Banners',
-        quantity: 5,
-        lastUpdated: DateTime(2025, 5, 14)),
-    InventoryItem(
-        name: 'Ballpoint Pens',
-        category: 'Stationery',
-        quantity: 200,
-        lastUpdated: DateTime(2025, 5, 5)),
-    InventoryItem(
-        name: 'USB Flash Drives',
-        category: 'Electronics',
-        quantity: 15,
-        lastUpdated: DateTime(2025, 5, 8)),
-  ];
+  List<InventoryItem> _allItems = [];
+  bool _isLoading = true;
 
   String _selectedCategory = 'All';
-  List<String> _categories = ['All', 'Office Supplies', 'IDs', 'Banners', 'Stationery', 'Electronics'];
+  List<String> _categories = ['All'];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInventoryItems();
+  }
+
+  // Fetch inventory items from Firestore
+  Future<void> _fetchInventoryItems() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // Get user-specific inventory items
+      QuerySnapshot snapshot = await _inventoryCollection
+          .where('userId', isEqualTo: user?.uid)
+          .get();
+      
+      setState(() {
+        _allItems = snapshot.docs
+            .map((doc) => InventoryItem.fromFirestore(doc))
+            .toList();
+        
+        // Update categories
+        Set<String> uniqueCategories = {'All'};
+        for (var item in _allItems) {
+          uniqueCategories.add(item.category);
+        }
+        _categories = uniqueCategories.toList();
+      });
+    } catch (e) {
+      print('Error fetching inventory items: $e');
+      // Handle error (show a snackbar, etc.)
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   List<InventoryItem> get _filteredItems {
     return _allItems.where((item) {
@@ -75,6 +114,14 @@ class _HomescreenState extends State<Homescreen> {
   }
 
   void _addNewItem() {
+
+    // First check if user is authenticated
+  if (user == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('You must be logged in to add items')),
+    );
+    return;
+  }
     _nameController.clear();
     _categoryController.clear();
     _quantityController.clear();
@@ -94,23 +141,56 @@ class _HomescreenState extends State<Homescreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
               final name = _nameController.text;
               final category = _categoryController.text;
               final quantity = int.tryParse(_quantityController.text) ?? 0;
+              
               if (name.isNotEmpty && category.isNotEmpty && quantity > 0) {
-                setState(() {
-                  _allItems.add(InventoryItem(
-                      name: name,
-                      category: category,
-                      quantity: quantity,
-                      lastUpdated: DateTime.now()));
-                  if (!_categories.contains(category)) {
-                    _categories.add(category);
-                  }
-                });
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                );
+                
+                try {
+                  // Add to Firestore
+                  await _inventoryCollection.add({
+                    'name': name,
+                    'category': category,
+                    'quantity': quantity,
+                    'lastUpdated': Timestamp.now(),
+                    'userId': user?.uid, // Associate with the current user
+                  });
+                  
+                  // Refresh items
+                  await _fetchInventoryItems();
+                  
+                  // Close loading dialog and add dialog
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Item added successfully')),
+                  );
+                } catch (e) {
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error adding item: $e')),
+                  );
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill all fields correctly')),
+                );
               }
-              Navigator.of(context).pop();
             },
             child: const Text('Add'),
           ),
@@ -121,7 +201,6 @@ class _HomescreenState extends State<Homescreen> {
 
   void _editItem(int index) {
     final item = _filteredItems[index];
-    final realIndex = _allItems.indexOf(item);
     _nameController.text = item.name;
     _categoryController.text = item.category;
     _quantityController.text = item.quantity.toString();
@@ -141,23 +220,51 @@ class _HomescreenState extends State<Homescreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
               final name = _nameController.text;
               final category = _categoryController.text;
               final quantity = int.tryParse(_quantityController.text) ?? 0;
+              
               if (name.isNotEmpty && category.isNotEmpty && quantity > 0) {
-                setState(() {
-                  _allItems[realIndex] = InventoryItem(
-                      name: name,
-                      category: category,
-                      quantity: quantity,
-                      lastUpdated: DateTime.now());
-                  if (!_categories.contains(category)) {
-                    _categories.add(category);
-                  }
-                });
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                );
+                
+                try {
+                  // Update in Firestore
+                  await _inventoryCollection.doc(item.id).update({
+                    'name': name,
+                    'category': category,
+                    'quantity': quantity,
+                    'lastUpdated': Timestamp.now(),
+                  });
+                  
+                  // Refresh items
+                  await _fetchInventoryItems();
+                  
+                  // Close loading dialog and edit dialog
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Item updated successfully')),
+                  );
+                } catch (e) {
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error updating item: $e')),
+                  );
+                }
               }
-              Navigator.of(context).pop();
             },
             child: const Text('Save'),
           ),
@@ -168,7 +275,55 @@ class _HomescreenState extends State<Homescreen> {
 
   void _deleteItem(int index) {
     final item = _filteredItems[index];
-    setState(() => _allItems.remove(item));
+    
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Item'),
+        content: Text('Are you sure you want to delete "${item.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              // Show loading indicator
+              Navigator.of(context).pop(); // Close confirmation dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(child: CircularProgressIndicator()),
+              );
+              
+              try {
+                // Delete from Firestore
+                await _inventoryCollection.doc(item.id).delete();
+                
+                // Refresh items
+                await _fetchInventoryItems();
+                
+                // Close loading dialog
+                Navigator.of(context).pop();
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Item deleted successfully')),
+                );
+              } catch (e) {
+                // Close loading dialog
+                Navigator.of(context).pop();
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error deleting item: $e')),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -177,6 +332,11 @@ class _HomescreenState extends State<Homescreen> {
       appBar: AppBar(
         title: const Text('Inventory Dashboard'),
         actions: [
+          IconButton(
+            onPressed: _fetchInventoryItems, // Add refresh button
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Data',
+          ),
           IconButton(
             onPressed: signout,
             icon: const Icon(Icons.logout),
@@ -215,31 +375,33 @@ class _HomescreenState extends State<Homescreen> {
             ),
           ),
           Expanded(
-            child: _filteredItems.isEmpty
-                ? const Center(child: Text("No items found."))
-                : ListView.builder(
-                    itemCount: _filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _filteredItems[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: ListTile(
-                          title: Text(item.name),
-                          subtitle: Text(
-                            'Category: ${item.category}\nQuantity: ${item.quantity}\nLast Updated: ${DateFormat.yMMMMd().format(item.lastUpdated)}',
-                          ),
-                          isThreeLine: true,
-                          trailing: Wrap(
-                            spacing: 8,
-                            children: [
-                              IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _editItem(index)),
-                              IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteItem(index)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredItems.isEmpty
+                    ? const Center(child: Text("No items found."))
+                    : ListView.builder(
+                        itemCount: _filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = _filteredItems[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: ListTile(
+                              title: Text(item.name),
+                              subtitle: Text(
+                                'Category: ${item.category}\nQuantity: ${item.quantity}\nLast Updated: ${DateFormat.yMMMMd().format(item.lastUpdated)}',
+                              ),
+                              isThreeLine: true,
+                              trailing: Wrap(
+                                spacing: 8,
+                                children: [
+                                  IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _editItem(index)),
+                                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteItem(index)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
