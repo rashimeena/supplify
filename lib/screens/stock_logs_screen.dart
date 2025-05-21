@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 import 'package:intl/intl.dart';
 
 class StockLogsScreen extends StatelessWidget {
@@ -7,15 +8,30 @@ class StockLogsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      return const Scaffold(
+        body: Center(child: Text('You must be logged in to view logs.')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Stock Update Logs')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('stock_logs')
+            .where('userId', isEqualTo: currentUser.uid) // Filter by userId
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No logs found.'));
+          }
 
           final logs = snapshot.data!.docs;
 
@@ -28,7 +44,7 @@ class StockLogsScreen extends StatelessWidget {
               String dateStr = DateFormat.yMMMMd().add_jm().format(timestamp);
 
               return ListTile(
-                title: Text('${log['item']}'),
+                title: Text(log['item'] ?? 'Unknown item'),
                 subtitle: Text(dateStr),
                 trailing: Text(
                   '${log['change'] > 0 ? '+' : ''}${log['change']}',
