@@ -16,25 +16,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _loading = true;
 
   final CollectionReference settingsRef = FirebaseFirestore.instance.collection('settings');
-  final String settingsDocId = 'app_config'; // customize this ID if needed
+  late String settingsDocId;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    settingsDocId = user.uid;
     _loadSettings();
+  } else {
+    FirebaseAuth.instance.signInAnonymously().then((userCred) {
+      settingsDocId = userCred.user!.uid;
+      _loadSettings();
+    });
   }
+}
+ 
   //alert krene ke liye 
-  Future<void> checkLowStockAndNotify() async {
+ Future<void> checkLowStockAndNotify() async {
   try {
     // Ensure user is authenticated
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      final userCredential = await FirebaseAuth.instance.signInAnonymously();
+      user = userCredential.user;
     }
 
-    // Get settings
+    final userId = user!.uid;
+
+    // Get user-specific settings
     final settingsDoc = await FirebaseFirestore.instance
         .collection('settings')
-        .doc('app_config')
+        .doc(userId)
         .get();
 
     final settings = settingsDoc.data();
@@ -45,22 +59,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!showAlerts) return;
 
-    // Query inventory for low stock
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-
-final lowStockSnapshot = await FirebaseFirestore.instance
-    .collection('inventory')
-    .where('userId', isEqualTo: userId)
-    .where('quantity', isLessThanOrEqualTo: threshold)
-    .get();
+    // Query inventory for low stock items owned by the user
+    final lowStockSnapshot = await FirebaseFirestore.instance
+        .collection('inventory')
+        .where('userId', isEqualTo: userId)
+        .where('quantity', isLessThanOrEqualTo: threshold)
+        .get();
 
     if (lowStockSnapshot.docs.isNotEmpty) {
-      // Collect item names
       final itemNames = lowStockSnapshot.docs
           .map((doc) => doc['name'] ?? 'Unnamed Item')
           .join(', ');
 
-      // Show in-app alert
       Get.snackbar(
         'Low Stock Alert',
         'Items running low: $itemNames',
@@ -73,6 +83,7 @@ final lowStockSnapshot = await FirebaseFirestore.instance
     Get.snackbar('Error', 'Could not check low stock items.');
   }
 }
+
 
 
   Future<void> _loadSettings() async {

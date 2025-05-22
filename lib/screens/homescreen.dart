@@ -51,23 +51,147 @@ class InventoryItem {
 class _HomescreenState extends State<Homescreen> {
 
   Future<void> logStockChange({
-  required String itemId,
-  required String action,
-  required String name,
-  required String category,
-  required int quantityChange,
-}) async {
-  await FirebaseFirestore.instance.collection('stock_logs').add({
-    'itemId': itemId,
-    'action': action, // 'add', 'update', or 'delete'
-    'name': name,
-    'category': category,
-    'quantityChange': quantityChange,
-    'timestamp': Timestamp.now(),
-    'userId': user?.uid,
-  });
-}
+    required String itemId,
+    required String action,
+    required String name,
+    required String category,
+    required int quantityChange,
+  }) async {
+    await FirebaseFirestore.instance.collection('stock_logs').add({
+      'itemId': itemId,
+      'action': action, // 'add', 'update', or 'delete'
+      'name': name,
+      'category': category,
+      'quantityChange': quantityChange,
+      'timestamp': Timestamp.now(),
+      'userId': user?.uid,
+    });
+  }
 
+  // Low stock alert functionality
+  Future<void> checkLowStockAndNotify() async {
+    try {
+      // Ensure user is authenticated
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('No user authenticated, signing in anonymously...');
+        final userCredential = await FirebaseAuth.instance.signInAnonymously();
+        currentUser = userCredential.user;
+      }
+
+      if (currentUser == null) {
+        print('Failed to authenticate user');
+        return;
+      }
+
+      final userId = currentUser.uid;
+      print('Checking low stock for user: $userId');
+
+      // Get user-specific settings
+      final settingsDoc = await FirebaseFirestore.instance
+          .collection('settings')
+          .doc(userId)
+          .get();
+
+      print('Settings doc exists: ${settingsDoc.exists}');
+
+      final settings = settingsDoc.data();
+      if (settings == null) {
+        print('No settings found for user, using defaults');
+        // Use default values if no settings exist
+        final threshold = 5;
+        final showAlerts = false;
+        
+        if (!showAlerts) {
+          print('Alerts disabled by default');
+          return;
+        }
+      } else {
+        final threshold = settings['lowStockThreshold'] ?? 5;
+        final showAlerts = settings['showAlerts'] ?? false;
+        
+        print('Settings - threshold: $threshold, showAlerts: $showAlerts');
+
+        if (!showAlerts) {
+          print('Alerts disabled in settings');
+          return;
+        }
+
+        // Query all inventory items for the user first, then filter in memory
+        print('Querying all inventory for user, then filtering for quantity <= $threshold');
+        final allUserItemsSnapshot = await FirebaseFirestore.instance
+            .collection('inventory')
+            .where('userId', isEqualTo: userId)
+            .get();
+        
+        // Filter for low stock items in memory
+        final lowStockDocs = allUserItemsSnapshot.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final quantity = data['quantity'] as int? ?? 0;
+          return quantity <= threshold;
+        }).toList();
+
+        print('Found ${lowStockDocs.length} low stock items');
+
+        if (lowStockDocs.isNotEmpty && mounted) {
+          final itemNames = lowStockDocs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .map((data) => data['name']?.toString() ?? 'Unnamed Item')
+              .join(', ');
+
+          print('Low stock items: $itemNames');
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Low Stock Alert',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text('Items running low: $itemNames', style: TextStyle( color: Colors.black12),),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade100,
+              duration: const Duration(seconds: 6),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Low stock check error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red),
+                const SizedBox(width: 8),
+                const Text('Could not check low stock items'),
+              ],
+            ),
+            backgroundColor: Colors.red.shade100,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
 
   final user = FirebaseAuth.instance.currentUser;
   // Reference to the Firestore collection
@@ -113,6 +237,10 @@ class _HomescreenState extends State<Homescreen> {
         }
         _categories = uniqueCategories.toList();
       });
+
+      // Check for low stock alerts after fetching items
+      await checkLowStockAndNotify();
+      
     } catch (e) {
       print('Error fetching inventory items: $e');
       // Handle error (show a snackbar, etc.)
@@ -136,12 +264,12 @@ class _HomescreenState extends State<Homescreen> {
   void _addNewItem() {
 
     // First check if user is authenticated
-  if (user == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('You must be logged in to add items')),
-    );
-    return;
-  }
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to add items')),
+      );
+      return;
+    }
     _nameController.clear();
     _categoryController.clear();
     _quantityController.clear();
@@ -179,32 +307,22 @@ class _HomescreenState extends State<Homescreen> {
                 );
                 
                 try {
-                  // Add to Firestore
-                  // await _inventoryCollection.add({
-                  //   'name': name,
-                  //   'category': category,
-                  //   'quantity': quantity,
-                  //   'lastUpdated': Timestamp.now(),
-                  //   'userId': user?.uid, // Associate with the current user
-                  // });
-
                   final newDoc = await _inventoryCollection.add({
-  'name': name,
-  'category': category,
-  'quantity': quantity,
-  'lastUpdated': Timestamp.now(),
-  'userId': user?.uid,
-});
+                    'name': name,
+                    'category': category,
+                    'quantity': quantity,
+                    'lastUpdated': Timestamp.now(),
+                    'userId': user?.uid,
+                  });
 
-await logStockChange(
-  itemId: newDoc.id,
-  action: 'add',
-  name: name,
-  category: category,
-  quantityChange: quantity,
-);
+                  await logStockChange(
+                    itemId: newDoc.id,
+                    action: 'add',
+                    name: name,
+                    category: category,
+                    quantityChange: quantity,
+                  );
 
-                  
                   // Refresh items
                   await _fetchInventoryItems();
                   
@@ -283,15 +401,14 @@ await logStockChange(
                     'lastUpdated': Timestamp.now(),
                   });
                   await logStockChange(
-  itemId: item.id,
-  action: 'update',
-  name: name,
-  category: category,
-  quantityChange: quantity - item.quantity,
-);
+                    itemId: item.id,
+                    action: 'update',
+                    name: name,
+                    category: category,
+                    quantityChange: quantity - item.quantity,
+                  );
 
-                  
-                  // Refresh items
+                  // Refresh items and check for low stock
                   await _fetchInventoryItems();
                   
                   // Close loading dialog and edit dialog
@@ -347,14 +464,13 @@ await logStockChange(
                 await _inventoryCollection.doc(item.id).delete();
 
                 await logStockChange(
-  itemId: item.id,
-  action: 'delete',
-  name: item.name,
-  category: item.category,
-  quantityChange: -item.quantity,
-);
+                  itemId: item.id,
+                  action: 'delete',
+                  name: item.name,
+                  category: item.category,
+                  quantityChange: -item.quantity,
+                );
 
-                
                 // Refresh items
                 await _fetchInventoryItems();
                 
@@ -386,6 +502,11 @@ await logStockChange(
       appBar: AppBar(
         title: const Text('Inventory Dashboard'),
         actions: [
+          IconButton(
+            onPressed: checkLowStockAndNotify, // Manual low stock check
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'Check Low Stock',
+          ),
           IconButton(
             onPressed: _fetchInventoryItems, // Add refresh button
             icon: const Icon(Icons.refresh),
