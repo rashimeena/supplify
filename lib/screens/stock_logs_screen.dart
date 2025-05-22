@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class StockLogsScreen extends StatelessWidget {
@@ -7,6 +8,14 @@ class StockLogsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      return const Scaffold(
+        body: Center(child: Text("User not authenticated.")),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Stock Update Logs'),
@@ -14,8 +23,8 @@ class StockLogsScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('stock_logs')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
+            .where('userId', isEqualTo: uid) // filter only current user logs
+            .snapshots(), // no orderBy, avoid index
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('Something went wrong.'));
@@ -31,6 +40,13 @@ class StockLogsScreen extends StatelessWidget {
             return const Center(child: Text('No stock updates yet.'));
           }
 
+          // Manual sort by timestamp in descending order
+          logs.sort((a, b) {
+            final aTime = (a['timestamp'] as Timestamp).toDate();
+            final bTime = (b['timestamp'] as Timestamp).toDate();
+            return bTime.compareTo(aTime); // descending
+          });
+
           return ListView.builder(
             itemCount: logs.length,
             itemBuilder: (context, index) {
@@ -40,12 +56,14 @@ class StockLogsScreen extends StatelessWidget {
               final actionIcon = _getIcon(action);
               final actionColor = _getColor(action);
               final timestamp = (data['timestamp'] as Timestamp).toDate();
-              final formattedDate = DateFormat('MMM d, yyyy – hh:mm a').format(timestamp);
+              final formattedDate =
+                  DateFormat('MMM d, yyyy – hh:mm a').format(timestamp);
 
               return ListTile(
                 leading: Icon(actionIcon, color: actionColor),
                 title: Text('${data['name']} (${data['category']})'),
-                subtitle: Text('$action • Qty Change: ${data['quantityChange']} \n$formattedDate'),
+                subtitle: Text(
+                    '$action • Qty Change: ${data['quantityChange']} \n$formattedDate'),
                 isThreeLine: true,
               );
             },
@@ -81,8 +99,3 @@ class StockLogsScreen extends StatelessWidget {
     }
   }
 }
-
-
-
-
-
