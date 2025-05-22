@@ -46,10 +46,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!showAlerts) return;
 
     // Query inventory for low stock
-    final lowStockSnapshot = await FirebaseFirestore.instance
-        .collection('inventory') // Change to your inventory collection name
-        .where('quantity', isLessThanOrEqualTo: threshold)
-        .get();
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+final lowStockSnapshot = await FirebaseFirestore.instance
+    .collection('inventory')
+    .where('userId', isEqualTo: userId)
+    .where('quantity', isLessThanOrEqualTo: threshold)
+    .get();
 
     if (lowStockSnapshot.docs.isNotEmpty) {
       // Collect item names
