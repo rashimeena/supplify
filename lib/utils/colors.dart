@@ -90,6 +90,10 @@ class AppColors {
     Color(0xFFF59E0B),
   ];
 
+  static var secondaryLight;
+
+  static var accent;
+
   // Color utilities
   static Color withOpacity(Color color, double opacity) {
     return color.withOpacity(opacity);
