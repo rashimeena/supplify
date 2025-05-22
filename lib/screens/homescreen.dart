@@ -49,6 +49,26 @@ class InventoryItem {
 }
 
 class _HomescreenState extends State<Homescreen> {
+
+  Future<void> logStockChange({
+  required String itemId,
+  required String action,
+  required String name,
+  required String category,
+  required int quantityChange,
+}) async {
+  await FirebaseFirestore.instance.collection('stock_logs').add({
+    'itemId': itemId,
+    'action': action, // 'add', 'update', or 'delete'
+    'name': name,
+    'category': category,
+    'quantityChange': quantityChange,
+    'timestamp': Timestamp.now(),
+    'userId': user?.uid,
+  });
+}
+
+
   final user = FirebaseAuth.instance.currentUser;
   // Reference to the Firestore collection
   final CollectionReference _inventoryCollection = 
@@ -160,13 +180,30 @@ class _HomescreenState extends State<Homescreen> {
                 
                 try {
                   // Add to Firestore
-                  await _inventoryCollection.add({
-                    'name': name,
-                    'category': category,
-                    'quantity': quantity,
-                    'lastUpdated': Timestamp.now(),
-                    'userId': user?.uid, // Associate with the current user
-                  });
+                  // await _inventoryCollection.add({
+                  //   'name': name,
+                  //   'category': category,
+                  //   'quantity': quantity,
+                  //   'lastUpdated': Timestamp.now(),
+                  //   'userId': user?.uid, // Associate with the current user
+                  // });
+
+                  final newDoc = await _inventoryCollection.add({
+  'name': name,
+  'category': category,
+  'quantity': quantity,
+  'lastUpdated': Timestamp.now(),
+  'userId': user?.uid,
+});
+
+await logStockChange(
+  itemId: newDoc.id,
+  action: 'add',
+  name: name,
+  category: category,
+  quantityChange: quantity,
+);
+
                   
                   // Refresh items
                   await _fetchInventoryItems();
@@ -245,6 +282,14 @@ class _HomescreenState extends State<Homescreen> {
                     'quantity': quantity,
                     'lastUpdated': Timestamp.now(),
                   });
+                  await logStockChange(
+  itemId: item.id,
+  action: 'update',
+  name: name,
+  category: category,
+  quantityChange: quantity - item.quantity,
+);
+
                   
                   // Refresh items
                   await _fetchInventoryItems();
@@ -300,6 +345,15 @@ class _HomescreenState extends State<Homescreen> {
               try {
                 // Delete from Firestore
                 await _inventoryCollection.doc(item.id).delete();
+
+                await logStockChange(
+  itemId: item.id,
+  action: 'delete',
+  name: item.name,
+  category: item.category,
+  quantityChange: -item.quantity,
+);
+
                 
                 // Refresh items
                 await _fetchInventoryItems();

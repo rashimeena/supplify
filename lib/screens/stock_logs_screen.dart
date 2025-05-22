@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 import 'package:intl/intl.dart';
 
 class StockLogsScreen extends StatelessWidget {
@@ -8,52 +7,46 @@ class StockLogsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('You must be logged in to view logs.')),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Stock Update Logs')),
+      appBar: AppBar(
+        title: const Text('Stock Update Logs'),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('stock_logs')
-            .where('userId', isEqualTo: currentUser.uid) // Filter by userId
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Something went wrong.'));
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No logs found.'));
-          }
-
           final logs = snapshot.data!.docs;
+
+          if (logs.isEmpty) {
+            return const Center(child: Text('No stock updates yet.'));
+          }
 
           return ListView.builder(
             itemCount: logs.length,
             itemBuilder: (context, index) {
-              var log = logs[index].data() as Map<String, dynamic>;
-
-              DateTime timestamp = (log['timestamp'] as Timestamp).toDate();
-              String dateStr = DateFormat.yMMMMd().add_jm().format(timestamp);
+              final log = logs[index];
+              final data = log.data() as Map<String, dynamic>;
+              final action = data['action'] ?? 'unknown';
+              final actionIcon = _getIcon(action);
+              final actionColor = _getColor(action);
+              final timestamp = (data['timestamp'] as Timestamp).toDate();
+              final formattedDate = DateFormat('MMM d, yyyy – hh:mm a').format(timestamp);
 
               return ListTile(
-                title: Text(log['item'] ?? 'Unknown item'),
-                subtitle: Text(dateStr),
-                trailing: Text(
-                  '${log['change'] > 0 ? '+' : ''}${log['change']}',
-                  style: TextStyle(
-                    color: log['change'] > 0 ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                leading: Icon(actionIcon, color: actionColor),
+                title: Text('${data['name']} (${data['category']})'),
+                subtitle: Text('$action • Qty Change: ${data['quantityChange']} \n$formattedDate'),
+                isThreeLine: true,
               );
             },
           );
@@ -61,4 +54,31 @@ class StockLogsScreen extends StatelessWidget {
       ),
     );
   }
+
+  IconData _getIcon(String action) {
+    switch (action) {
+      case 'add':
+        return Icons.add_circle;
+      case 'update':
+        return Icons.edit;
+      case 'delete':
+        return Icons.delete;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getColor(String action) {
+    switch (action) {
+      case 'add':
+        return Colors.green;
+      case 'update':
+        return Colors.orange;
+      case 'delete':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
 }
+
