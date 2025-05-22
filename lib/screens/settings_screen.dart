@@ -23,6 +23,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadSettings();
   }
+  //alert krene ke liye 
+  Future<void> checkLowStockAndNotify() async {
+  try {
+    // Ensure user is authenticated
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+
+    // Get settings
+    final settingsDoc = await FirebaseFirestore.instance
+        .collection('settings')
+        .doc('app_config')
+        .get();
+
+    final settings = settingsDoc.data();
+    if (settings == null) return;
+
+    final threshold = settings['lowStockThreshold'] ?? 5;
+    final showAlerts = settings['showAlerts'] ?? false;
+
+    if (!showAlerts) return;
+
+    // Query inventory for low stock
+    final lowStockSnapshot = await FirebaseFirestore.instance
+        .collection('inventory') // Change to your inventory collection name
+        .where('quantity', isLessThanOrEqualTo: threshold)
+        .get();
+
+    if (lowStockSnapshot.docs.isNotEmpty) {
+      // Collect item names
+      final itemNames = lowStockSnapshot.docs
+          .map((doc) => doc['name'] ?? 'Unnamed Item')
+          .join(', ');
+
+      // Show in-app alert
+      Get.snackbar(
+        'Low Stock Alert',
+        'Items running low: $itemNames',
+        duration: const Duration(seconds: 6),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  } catch (e) {
+    print('Low stock check error: $e');
+    Get.snackbar('Error', 'Could not check low stock items.');
+  }
+}
+
 
   Future<void> _loadSettings() async {
   try {

@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -8,6 +10,8 @@ class Homescreen extends StatefulWidget {
 
   @override
   State<Homescreen> createState() => _HomescreenState();
+
+  
 }
 
 class InventoryItem {
@@ -85,10 +89,60 @@ class _HomescreenState extends State<Homescreen> {
   String _selectedCategory = 'All';
   List<String> _categories = ['All'];
 
+  //alert ke liye 
+  Future<void> checkLowStockAndNotify() async {
+  try {
+    // Ensure user is authenticated
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+
+    // Get settings
+    final settingsDoc = await FirebaseFirestore.instance
+        .collection('settings')
+        .doc('app_config')
+        .get();
+
+    final settings = settingsDoc.data();
+    if (settings == null) return;
+
+    final threshold = settings['lowStockThreshold'] ?? 5;
+    final showAlerts = settings['showAlerts'] ?? false;
+
+    if (!showAlerts) return;
+
+    // Query inventory for low stock
+    final lowStockSnapshot = await FirebaseFirestore.instance
+        .collection('inventory') // Change to your inventory collection name
+        .where('quantity', isLessThanOrEqualTo: threshold)
+        .get();
+
+    if (lowStockSnapshot.docs.isNotEmpty) {
+      // Collect item names
+      final itemNames = lowStockSnapshot.docs
+          .map((doc) => doc['name'] ?? 'Unnamed Item')
+          .join(', ');
+
+      // Show in-app alert
+      Get.snackbar(
+        'Low Stock Alert',
+        'Items running low: $itemNames',
+        duration: const Duration(seconds: 6),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  } catch (e) {
+    print('Low stock check error: $e');
+    Get.snackbar('Error', 'Could not check low stock items.');
+  }
+}
+
+
   @override
   void initState() {
     super.initState();
     _fetchInventoryItems();
+    checkLowStockAndNotify();
   }
 
   // Fetch inventory items from Firestore
