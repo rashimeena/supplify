@@ -49,6 +49,8 @@ class InventoryItem {
 }
 
 class _HomescreenState extends State<Homescreen> {
+  // Add low stock threshold variable
+  int _lowStockThreshold = 5;
 
   Future<void> logStockChange({
     required String itemId,
@@ -66,6 +68,54 @@ class _HomescreenState extends State<Homescreen> {
       'timestamp': Timestamp.now(),
       'userId': user?.uid,
     });
+  }
+
+  // Method to check if item is low stock
+  bool _isLowStock(int quantity) {
+    return quantity <= _lowStockThreshold;
+  }
+
+  // Method to get stock status color
+  Color _getStockStatusColor(int quantity) {
+    if (quantity == 0) return Colors.red.shade700;
+    if (quantity <= _lowStockThreshold) return Colors.orange.shade700;
+    return Colors.green.shade600;
+  }
+
+  // Method to get stock status text
+  String _getStockStatusText(int quantity) {
+    if (quantity == 0) return 'OUT OF STOCK';
+    if (quantity <= _lowStockThreshold) return 'LOW STOCK';
+    return 'IN STOCK';
+  }
+
+  // Method to get stock status icon
+  IconData _getStockStatusIcon(int quantity) {
+    if (quantity == 0) return Icons.error;
+    if (quantity <= _lowStockThreshold) return Icons.warning;
+    return Icons.check_circle;
+  }
+
+  // Load user settings including low stock threshold
+  Future<void> _loadUserSettings() async {
+    try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final settingsDoc = await FirebaseFirestore.instance
+          .collection('settings')
+          .doc(currentUser.uid)
+          .get();
+
+      if (settingsDoc.exists) {
+        final settings = settingsDoc.data();
+        setState(() {
+          _lowStockThreshold = settings?['lowStockThreshold'] ?? 5;
+        });
+      }
+    } catch (e) {
+      print('Error loading user settings: $e');
+    }
   }
 
   // Low stock alert functionality
@@ -212,6 +262,7 @@ class _HomescreenState extends State<Homescreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserSettings();
     _fetchInventoryItems();
   }
 
@@ -262,7 +313,6 @@ class _HomescreenState extends State<Homescreen> {
   }
 
   void _addNewItem() {
-
     // First check if user is authenticated
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -558,19 +608,94 @@ class _HomescreenState extends State<Homescreen> {
                         itemCount: _filteredItems.length,
                         itemBuilder: (context, index) {
                           final item = _filteredItems[index];
+                          final isLowStock = _isLowStock(item.quantity);
+                          final stockColor = _getStockStatusColor(item.quantity);
+                          final stockStatus = _getStockStatusText(item.quantity);
+                          final stockIcon = _getStockStatusIcon(item.quantity);
+                          
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            elevation: isLowStock ? 4 : 2,
+                            color: item.quantity == 0 
+                                ? Colors.red.shade50 
+                                : isLowStock 
+                                    ? Colors.orange.shade50 
+                                    : null,
                             child: ListTile(
-                              title: Text(item.name),
-                              subtitle: Text(
-                                'Category: ${item.category}\nQuantity: ${item.quantity}\nLast Updated: ${DateFormat.yMMMMd().format(item.lastUpdated)}',
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: stockColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: stockColor.withOpacity(0.3)),
+                                ),
+                                child: Icon(
+                                  stockIcon,
+                                  color: stockColor,
+                                  size: 24,
+                                ),
+                              ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: item.quantity == 0 ? Colors.red.shade700 : null,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isLowStock)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: stockColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        stockStatus,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Category: ${item.category}'),
+                                  Row(
+                                    children: [
+                                      Text('Quantity: '),
+                                      Text(
+                                        '${item.quantity}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: stockColor,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Text('Last Updated: ${DateFormat.yMMMMd().format(item.lastUpdated)}'),
+                                ],
                               ),
                               isThreeLine: true,
                               trailing: Wrap(
                                 spacing: 8,
                                 children: [
-                                  IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _editItem(index)),
-                                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteItem(index)),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue), 
+                                    onPressed: () => _editItem(index)
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red), 
+                                    onPressed: () => _deleteItem(index)
+                                  ),
                                 ],
                               ),
                             ),
