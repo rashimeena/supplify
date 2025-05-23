@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supplify/widgets/inventory_dashboard.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -49,6 +49,12 @@ class InventoryItem {
 }
 
 class _HomescreenState extends State<Homescreen> {
+  // Color palette constants
+  static const Color lightBlue = Color(0xFF8ECAE6);
+  static const Color blue = Color(0xFF219EBC);
+  static const Color darkBlue = Color(0xFF023047);
+  static const Color amber = Color(0xFFFFB703);
+
   // Add low stock threshold variable
   int _lowStockThreshold = 5;
 
@@ -77,9 +83,9 @@ class _HomescreenState extends State<Homescreen> {
 
   // Method to get stock status color
   Color _getStockStatusColor(int quantity) {
-    if (quantity == 0) return Colors.red.shade700;
-    if (quantity <= _lowStockThreshold) return Colors.orange.shade700;
-    return Colors.green.shade600;
+    if (quantity == 0) return darkBlue; // Changed from red to darkBlue
+    if (quantity <= _lowStockThreshold) return Colors.orange.shade700; // Keep orange
+    return blue; // Changed from green to blue
   }
 
   // Method to get stock status text
@@ -195,7 +201,7 @@ class _HomescreenState extends State<Homescreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                  const Icon(Icons.warning_amber_outlined, color: Colors.white),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -204,15 +210,15 @@ class _HomescreenState extends State<Homescreen> {
                       children: [
                         const Text(
                           'Low Stock Alert',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white,),
                         ),
-                        Text('Items running low: $itemNames', style: TextStyle( color: Colors.black12),),
+                        Text('Items running low: $itemNames', style: TextStyle( color: Colors.white),),
                       ],
                     ),
                   ),
                 ],
               ),
-              backgroundColor: Colors.orange.shade100,
+              backgroundColor: Colors.orangeAccent, // Keep orange
               duration: const Duration(seconds: 6),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -229,12 +235,12 @@ class _HomescreenState extends State<Homescreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.red),
+                Icon(Icons.error_outline, color: darkBlue), // Changed from red to darkBlue
                 const SizedBox(width: 8),
                 const Text('Could not check low stock items'),
               ],
             ),
-            backgroundColor: Colors.red.shade100,
+            backgroundColor: lightBlue, // Changed from red.shade100 to lightBlue
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
           ),
@@ -539,7 +545,7 @@ class _HomescreenState extends State<Homescreen> {
                 );
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('Delete', style: TextStyle(color: darkBlue)), // Changed from red to darkBlue
           ),
         ],
       ),
@@ -548,168 +554,25 @@ class _HomescreenState extends State<Homescreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventory Dashboard'),
-        actions: [
-          IconButton(
-            onPressed: checkLowStockAndNotify, // Manual low stock check
-            icon: const Icon(Icons.notifications_outlined),
-            tooltip: 'Check Low Stock',
-          ),
-          IconButton(
-            onPressed: _fetchInventoryItems, // Add refresh button
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Data',
-          ),
-          IconButton(
-            onPressed: signout,
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sign Out',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text('Logged in as: ${user?.email}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Search inventory...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              decoration: InputDecoration(
-                labelText: 'Filter by Category',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              items: _categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
-              onChanged: (value) => setState(() => _selectedCategory = value!),
-            ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredItems.isEmpty
-                    ? const Center(child: Text("No items found."))
-                    : ListView.builder(
-                        itemCount: _filteredItems.length,
-                        itemBuilder: (context, index) {
-                          final item = _filteredItems[index];
-                          final isLowStock = _isLowStock(item.quantity);
-                          final stockColor = _getStockStatusColor(item.quantity);
-                          final stockStatus = _getStockStatusText(item.quantity);
-                          final stockIcon = _getStockStatusIcon(item.quantity);
-                          
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            elevation: isLowStock ? 4 : 2,
-                            color: item.quantity == 0 
-                                ? Colors.red.shade50 
-                                : isLowStock 
-                                    ? Colors.orange.shade50 
-                                    : null,
-                            child: ListTile(
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: stockColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: stockColor.withOpacity(0.3)),
-                                ),
-                                child: Icon(
-                                  stockIcon,
-                                  color: stockColor,
-                                  size: 24,
-                                ),
-                              ),
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      item.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: item.quantity == 0 ? Colors.red.shade700 : null,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isLowStock)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: stockColor,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        stockStatus,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Category: ${item.category}'),
-                                  Row(
-                                    children: [
-                                      Text('Quantity: '),
-                                      Text(
-                                        '${item.quantity}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: stockColor,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Text('Last Updated: ${DateFormat.yMMMMd().format(item.lastUpdated)}'),
-                                ],
-                              ),
-                              isThreeLine: true,
-                              trailing: Wrap(
-                                spacing: 8,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue), 
-                                    onPressed: () => _editItem(index)
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red), 
-                                    onPressed: () => _deleteItem(index)
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addNewItem,
-        child: const Icon(Icons.add),
-        tooltip: 'Add New Item',
-      ),
+    return InventoryDashboard(
+      userEmail: user?.email,
+      isLoading: _isLoading,
+      filteredItems: _filteredItems,
+      categories: _categories,
+      selectedCategory: _selectedCategory,
+      searchController: _searchController,
+      fetchInventoryItems: _fetchInventoryItems,
+      checkLowStockAndNotify: checkLowStockAndNotify,
+      signOut: signout,
+      editItem: _editItem,
+      deleteItem: _deleteItem,
+      addNewItem: _addNewItem,
+      onCategoryChanged: (value) => setState(() => _selectedCategory = value ?? 'All'),
+      onSearchChanged: (_) => setState(() {}),
+      isLowStock: _isLowStock,
+      getStockStatusColor: _getStockStatusColor,
+      getStockStatusText: _getStockStatusText,
+      getStockStatusIcon: _getStockStatusIcon,
     );
   }
 }
