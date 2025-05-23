@@ -7,6 +7,8 @@ import 'package:supplify/utils/colors.dart';
 import 'package:supplify/utils/theme.dart'; // Import your colors file
 
 class CategoryDistributionScreen extends StatefulWidget {
+  const CategoryDistributionScreen({super.key});
+
   @override
   _CategoryDistributionScreenState createState() => _CategoryDistributionScreenState();
 }
@@ -436,7 +438,7 @@ class _CategoryDistributionScreenState extends State<CategoryDistributionScreen>
                                   entry.value,
                                   totalItems,
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ),
                         ),

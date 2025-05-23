@@ -10,6 +10,8 @@ Future<void> main() async {
 }
 
 class SupplifyApp extends StatelessWidget {
+  const SupplifyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(

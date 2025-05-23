@@ -17,11 +17,9 @@ class AppTheme {
     colorScheme: ColorScheme.light(
       primary: AppColors.blue,
       secondary: AppColors.amber,
-      background: AppColors.lightBlue,
       surface: Colors.white,
       onPrimary: Colors.white,
       onSecondary: Colors.black,
-      onBackground: AppColors.darkBlue,
       onSurface: AppColors.darkBlue,
     ),
     textTheme: TextTheme(

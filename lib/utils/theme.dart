@@ -196,11 +196,9 @@ class AppTheme {
     onSecondary: AppColors.textOnSecondary,
     error: AppColors.error,
     onError: Colors.white,
-    background: AppColors.background,
-    onBackground: AppColors.textPrimary,
     surface: AppColors.surface,
     onSurface: AppColors.textPrimary,
-    surfaceVariant: AppColors.surfaceVariant,
+    surfaceContainerHighest: AppColors.surfaceVariant,
     onSurfaceVariant: AppColors.textSecondary,
     outline: AppColors.border,
   );
