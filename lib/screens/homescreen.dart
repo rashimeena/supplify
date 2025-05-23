@@ -53,6 +53,7 @@ class _HomescreenState extends State<Homescreen> {
   static const Color lightBlue = Color(0xFF8ECAE6);
   static const Color blue = Color(0xFF219EBC);
   static const Color darkBlue = Color(0xFF023047);
+  // ignore: unused_field
   static const Color amber = Color(0xFFFFB703);
 
   // Add low stock threshold variable
@@ -155,6 +156,7 @@ class _HomescreenState extends State<Homescreen> {
       if (settings == null) {
         print('No settings found for user, using defaults');
         // Use default values if no settings exist
+        // ignore: unused_local_variable
         final threshold = 5;
         final showAlerts = false;
         
@@ -182,7 +184,7 @@ class _HomescreenState extends State<Homescreen> {
         
         // Filter for low stock items in memory
         final lowStockDocs = allUserItemsSnapshot.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
+          final data = doc.data();
           final quantity = data['quantity'] as int? ?? 0;
           return quantity <= threshold;
         }).toList();
@@ -191,7 +193,7 @@ class _HomescreenState extends State<Homescreen> {
 
         if (lowStockDocs.isNotEmpty && mounted) {
           final itemNames = lowStockDocs
-              .map((doc) => doc.data() as Map<String, dynamic>)
+              .map((doc) => doc.data())
               .map((data) => data['name']?.toString() ?? 'Unnamed Item')
               .join(', ');
 

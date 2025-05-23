@@ -186,7 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: AppColors.blue,
+          backgroundColor: const Color.fromARGB(255, 2, 57, 71),
           foregroundColor: Colors.white,
         ),
         body: _loading
@@ -250,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.darkBlue,
+                                    color: const Color.fromARGB(255, 8, 36, 50),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
