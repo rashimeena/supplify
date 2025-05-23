@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:supplify/screens/wrapper.dart';
+import 'package:supplify/screens/splash_screen.dart';
 import 'package:get/get.dart';
 
 Future<void> main() async {
@@ -10,6 +10,8 @@ Future<void> main() async {
 }
 
 class SupplifyApp extends StatelessWidget {
+  const SupplifyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -20,7 +22,7 @@ class SupplifyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
        debugShowCheckedModeBanner: false,
-      home: Wrapper(),
+      home: SplashScreen(),
     );
   }
 }

@@ -10,6 +10,8 @@ import 'dart:math';
 // import 'theme.dart'; // Import your theme file
 
 class AnalyticsScreen extends StatefulWidget {
+  const AnalyticsScreen({super.key});
+
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
 }

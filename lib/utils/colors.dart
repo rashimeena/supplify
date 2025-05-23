@@ -8,7 +8,7 @@ class AppColors {
   static const Color teal = Color(0xFF219EBC);          // #219EBC
   static const Color lightBlue = Color(0xFF8ECAE6);     // #8ECAE6
   static const Color goldenYellow = Color(0xFFFFB703);  // #FFB703
-  static const Color orange = Color(0xFFB8500);         // #FB8500
+  static const Color orange = Color(0x0ffb8500);         // #FB8500
 
   // Primary color variations
   static const Color primary = teal;
