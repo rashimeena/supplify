@@ -274,14 +274,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
+          isExpanded: true,
           onChanged: onChanged,
           icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            // fontSize: 12,
             color: AppColors.textPrimary,
           ),
           items: items.map((item) => DropdownMenuItem<T>(
             value: item,
-            child: Text(item.toString()),
+            child: Text(
+              //  style: const TextStyle(fontSize: 12),
+              item.toString()),
           )).toList(),
         ),
       ),
