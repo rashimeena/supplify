@@ -61,49 +61,73 @@ class InventoryDashboard extends StatelessWidget {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 25,
           ),
         ),
         backgroundColor: darkBlue, // Changed to dark blue
         elevation: 0,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              onPressed: checkLowStockAndNotify,
-              icon: Icon(Icons.notifications_outlined, color: Colors.white),
-              tooltip: 'Check Low Stock',
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              onPressed: fetchInventoryItems,
-              icon: Icon(Icons.refresh, color: Colors.white),
-              tooltip: 'Refresh Data',
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              onPressed: signOut,
-              icon: Icon(Icons.logout, color: Colors.white),
-              tooltip: 'Sign Out',
-            ),
-          ),
-        ],
+       actions: [
+  // Notification button
+  Container(
+    margin: const EdgeInsets.only(right: 4),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        onPressed: checkLowStockAndNotify,
+        icon: Icon(Icons.notifications_outlined, color: Colors.white),
+        iconSize: 18,
+        padding: EdgeInsets.zero,
+        tooltip: 'Check Low Stock',
+      ),
+    ),
+  ),
+
+  // Refresh button
+  Container(
+    margin: const EdgeInsets.only(right: 4),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        onPressed: fetchInventoryItems,
+        icon: Icon(Icons.refresh, color: Colors.white),
+        iconSize: 18,
+        padding: EdgeInsets.zero,
+        tooltip: 'Refresh Data',
+      ),
+    ),
+  ),
+
+  // Sign out button
+  Container(
+    margin: const EdgeInsets.only(right: 8),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        onPressed: signOut,
+        icon: Icon(Icons.logout, color: Colors.white),
+        iconSize: 18,
+        padding: EdgeInsets.zero,
+        tooltip: 'Sign Out',
+      ),
+    ),
+  ),
+],
+
       ),
       body: Column(
         children: [
@@ -467,7 +491,7 @@ class InventoryDashboard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: lightBlue.withValues(alpha:0.3),
+              color: const Color.fromARGB(255, 3, 46, 66).withValues(alpha:0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -476,7 +500,7 @@ class InventoryDashboard extends StatelessWidget {
         child: FloatingActionButton.extended(
           onPressed: addNewItem,
           backgroundColor: lightBlue,
-          foregroundColor: Colors.white70,
+          foregroundColor: const Color.fromARGB(221, 255, 255, 255),
           icon: const Icon(Icons.add, size: 24),
           label: const Text(
             'Add',

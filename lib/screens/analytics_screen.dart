@@ -15,7 +15,7 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  String selectedCategory = 'Office Supplies';
+  String selectedCategory = 'Banners';
   String selectedRange = 'Last 30 Days';
   bool isLoading = true;
   List<Map<String, dynamic>> inventoryData = [];
@@ -29,7 +29,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   ];
 
   final List<String> predefinedCategories = [
-    'Visitor ID Cards',
+    'ID Cards',
     'Office Supplies',
     'Banners',
     'Stationery',
@@ -323,6 +323,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         title: Text(
           "Analytics Dashboard",
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+             fontSize: 25,
             color: AppColors.textOnPrimary,
             fontWeight: FontWeight.w600,
           ),
@@ -340,6 +341,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               "Inventory Analytics",
               style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                 fontSize: 23,
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
@@ -348,6 +350,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               "Track your inventory trends and performance metrics",
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -371,6 +374,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     selectedCategory,
                     Icons.category_outlined,
                     AppColors.secondary,
+                     
                   ),
                 ),
               ],
