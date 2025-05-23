@@ -229,9 +229,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(7),
                             decoration: BoxDecoration(
-                              color: AppColors.blue,
+                              
+                              color: const Color.fromARGB(255, 7, 56, 68),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
@@ -248,7 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Text(
                                   'Inventory Settings',
                                   style: TextStyle(
-                                    fontSize: 22,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: const Color.fromARGB(255, 8, 36, 50),
                                   ),
