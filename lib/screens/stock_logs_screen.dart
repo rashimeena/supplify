@@ -52,7 +52,10 @@ class StockLogsScreen extends StatelessWidget {
         backgroundColor: AppColors.darkNavy,
         foregroundColor: AppColors.textOnPrimary,
       ),
+
+      
       body: StreamBuilder(
+        
         stream: FirebaseFirestore.instance
             .collection('stock_logs')
             .where('userId', isEqualTo: uid)

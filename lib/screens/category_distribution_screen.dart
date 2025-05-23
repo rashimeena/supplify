@@ -112,54 +112,62 @@ class _CategoryDistributionScreenState extends State<CategoryDistributionScreen>
     return colors[_random.nextInt(colors.length)];
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppTheme.radiusL),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppTheme.spacingS),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
+  Widget _buildStatCard(String title, String value, IconData icon, Color iconColor) {
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8), // 🔻 Smaller padding
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 6,
+          offset: Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(width: AppTheme.spacingS),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 20, // 🔻 Smaller icon
               ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spacingS),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
             ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12, // 🔻 Smaller font
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20, // 🔻 Slightly reduced
+            fontWeight: FontWeight.bold,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildLegendItem(String category, Color color, double value, double total) {
     final percentage = (value / total) * 100;
@@ -234,6 +242,7 @@ class _CategoryDistributionScreenState extends State<CategoryDistributionScreen>
       appBar: AppBar(
         title: Text("Category Distribution",
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          fontSize: 25,
             color: AppColors.textOnPrimary,
             fontWeight: FontWeight.w600),
         ),
@@ -242,7 +251,8 @@ class _CategoryDistributionScreenState extends State<CategoryDistributionScreen>
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            
             onPressed: () {
               setState(() {
                 isLoading = true;
@@ -318,6 +328,7 @@ class _CategoryDistributionScreenState extends State<CategoryDistributionScreen>
                         Text(
                           'Inventory Overview',
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontSize: 23,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -325,6 +336,7 @@ class _CategoryDistributionScreenState extends State<CategoryDistributionScreen>
                         Text(
                           'Breakdown of your inventory items by category',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
                             color: AppColors.textSecondary,
                           ),
                         ),
